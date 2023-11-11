@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
-import sqlite3
+from . import db
 
 # to get a string like this run:
 # openssl rand -hex 32
@@ -15,6 +15,7 @@ SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
 
 class Token(BaseModel):
     access_token: str
@@ -33,12 +34,10 @@ class UserInDB(User):
     hashed_password: str
 
 
-con = sqlite3.connect("test.db")
-con.row_factory = sqlite3.Row
+con = db.connect()
 cur = con.cursor()
 
-
-pwd_context = CryptContext(schemes=["bcrypt"],deprecated = "auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -54,14 +53,10 @@ def get_password_hash(plain_password):
 
 
 def get_user(user):
-    try:
-        if user is not None:
-            user = dict(user)
-            return UserInDB(**user)
-    except HTTPException:
-        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED,
-                            detail="Incorrect username or password")
-    
+    if user is not None:
+        user = dict(user)
+        return UserInDB(**user)
+
 
 def authenticate_user(USER, plain_password: str):
     user = get_user(USER)
@@ -115,10 +110,12 @@ async def get_current_active_user(
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
-    cur.execute("SELECT email,hashed_password FROM Users WHERE email=?",(form_data.username,))
+    cur.execute(
+        "SELECT email,hashed_password FROM USERS WHERE email=?", (form_data.username,)
+    )
     USER = cur.fetchone()
-    
-    user = authenticate_user(USER,form_data.password)
+
+    user = authenticate_user(USER, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -131,20 +128,25 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 @app.post("/register")
 async def register_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-    cur.execute("SELECT email FROM Users WHERE email=?",(form_data.username,))
+    cur.execute("SELECT email FROM USERS WHERE email=?", (form_data.username,))
     user = cur.fetchone()
-    if user is not None: 
-        raise HTTPException(status_code= status.HTTP_409_CONFLICT, detail= "User already exists")
-    
-    cur.execute("INSERT INTO Users(email,username,hashed_password,state_comment) VALUES(?,'',?,'')",
-                (form_data.username, get_password_hash(form_data.password),))
+    if user is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="User already exists"
+        )
+
+    cur.execute(
+        "INSERT INTO Users(email,username,hashed_password,state_comment) VALUES(?,'',?,'')",
+        (
+            form_data.username,
+            get_password_hash(form_data.password),
+        ),
+    )
     con.commit()
-    return HTTPException(status_code= status.HTTP_200_OK, detail= "Signup Successful")
-
-
-
+    return HTTPException(status_code=status.HTTP_200_OK, detail="Signup Successful")
 
 
 @app.get("/users/me/", response_model=User)
