@@ -1,11 +1,20 @@
 from fastapi.testclient import TestClient
-import os
+import pytest
 import sqlite3
 
-from .main import app
+from .main import app, get_password_hash
+from . import db
+from . import utils
 
 
 client = TestClient(app)
+
+
+@pytest.fixture
+def cur():
+    con = db.connect()
+    yield con.cursor()
+    con.close()
 
 
 def login(username: str, password: str):
@@ -13,49 +22,23 @@ def login(username: str, password: str):
     return response
 
 
-def signup(email: str, password: str):
-    response = client.post("/register", data={"username": email, "password": password})
-    return response
+def test_register_success(cur):
+    email = utils.randomword(10)
+    passwd = utils.randomword(10)
 
+    response = client.post("/register", data={"username": email, "password": passwd})
 
-def test_register_success():
-    email = "leewoorim@test.com"
-    passwd = "leewoorim"
+    res = cur.execute("SELECT * FROM USERS WHERE email=?", (email,))
+    row = res.fetchone()
 
-    con = sqlite3.connect(path, check_same_thread=False)
-    con.row_factory = sqlite3.Row
-    cur = con.cursor()
-
-    cur.commit()
-
-    response = signup(email=email, password=passwd)
-
-    cur.execute("SELECT * FROM USERS WHERE email=?", (email,))
-
-    res = cur.fetchone()
-
-    assert res is not None
-    assert res["email"] == email
-    print(res)
+    assert row["email"] == email, "이메일 틀림"
     assert response.status_code == 200
-    assert response.json() == {"detail": "Signup Successful"}
+    assert response.json()["detail"] == "Signup Successful"
 
+    response = client.post("/register", data={"username": email, "password": passwd})
 
-def test_register_fail():
-    email = "test@test.com"
-    passwd = "test"
-
-    response = signup(email=email, password=passwd)
-
-    con = sqlite3.connect(path, check_same_thread=False)
-    con.row_factory = sqlite3.Row
-    cur = con.cursor()
-    cur.execute("SELECT * FROM USERS WHERE email=?", (email,))
-
-    db = cur.fetchone()
-
-    assert response.status_code == 200
-    assert response.json() == {"msg": "Signup Successful"}
+    assert response.status_code == 409
+    assert response.json()["detail"] == "User already exists"
 
 
 def test_login_fail_no_user():
