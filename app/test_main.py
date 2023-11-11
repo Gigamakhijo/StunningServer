@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 import pytest
-import sqlite3
+import httpx
 
-from .main import app, get_password_hash
+from .main import app
 from . import db
 from . import utils
 
@@ -15,11 +15,6 @@ def cur():
     con = db.connect()
     yield con.cursor()
     con.close()
-
-
-def login(username: str, password: str):
-    response = client.post("/token", data={"username": username, "password": password})
-    return response
 
 
 def test_register_success(cur):
@@ -41,21 +36,52 @@ def test_register_success(cur):
     assert response.json()["detail"] == "User already exists"
 
 
-def test_login_fail_no_user():
+def test_login_success():
+    email = utils.randomword(10)
+    passwd = utils.randomword(10)
+    response = client.post("/register", data={"username": email, "password": passwd})
+
+    assert response.status_code == 200, "가입 잘못됬음"
+
+    response = client.post("/token", data={"username": email, "password": passwd})
+    json = response.json()
+
+    assert response.status_code == 200
+
+    response = client.get(
+        "/users/me",
+        headers={
+            "Authorization": f"{json['token_type']} {json['access_token']}",
+        },
+    )
+    assert response.status_code == 200
+
+
+def test_login_fail_no_user(cur):
     # not in db
-    response = login("asdlfkaj", "test")
+    passwd = utils.randomword(10)
+
+    user = "asdfasd"
+    while user is not None:
+        email = utils.randomword(10)
+        user = db.get_user(email)
+
+    response = client.post("/token", data={"username": email, "password": passwd})
+
     assert response.status_code == 401
-    assert response.json() == {"msg": "Incorrect username or password"}
+    assert response.json()["detail"] == "Incorrect username or password"
 
 
 def test_login_fail_incorrect_passwd():
     # not in db
-    response = login("test", "asdfasdf")
-    assert response.status_code == 401
-    assert response.json() == {"msg": "Incorrect username or password"}
+    email = "sdvddsas"
+    passwd = "asddddaff"
 
+    response = client.post("/register", data={"username": email, "password": passwd})
 
-def test_login_success():
-    response = login("test", "test")
+    assert response.status_code == 200
+
+    response = client.post("/token", data={"username": email, "password": "tfdht"})
+
     assert response.status_code == 401
-    assert response.json() == {"msg": "Incorrect username or password"}
+    assert response.json()["detail"] == "Incorrect username or password"
