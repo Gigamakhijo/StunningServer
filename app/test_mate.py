@@ -1,8 +1,7 @@
-from fastapi.testclient import TestClient
-from . import utils
-from . import db
 import pytest
+from fastapi.testclient import TestClient
 
+from . import db, utils
 from .main import app
 
 client = TestClient(app)
@@ -46,7 +45,7 @@ def test_request_confirm_success(cur):
 
     res = client.post(
         "/mate/follow",
-        data=body,
+        json=body,
     )
 
     assert res.status_code == 200
@@ -72,7 +71,7 @@ def test_request_confirm_failed():
     target_username = "ohsujin"
 
     res = client.post(
-        "/mate/follow", data={"username": username, "target_username": target_username}
+        "/mate/follow", json={"username": username, "target_username": target_username}
     )
 
     assert res.status_code == 409

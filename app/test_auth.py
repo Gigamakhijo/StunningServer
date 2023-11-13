@@ -1,10 +1,8 @@
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
+from . import db, utils
 from .main import app
-from . import db
-from . import utils
-
 
 client = TestClient(app)
 

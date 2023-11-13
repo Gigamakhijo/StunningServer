@@ -1,8 +1,7 @@
-from fastapi import APIRouter, HTTPException, status, Form
-from typing import Annotated
-from .. import db
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
-import random
+
+from .. import db
 
 router = APIRouter()
 
@@ -30,7 +29,7 @@ class User(BaseModel):
 
 @router.post("/mate/follow")
 def following_request(
-    username: Annotated[str, Form()], target_username: Annotated[str, Form()]
+    user: User
 ):
     con = db.connect()
     cur = con.cursor()
@@ -38,8 +37,8 @@ def following_request(
     cur.execute(
         "SELECT * FROM FOLLOW_REQUEST WHERE username=? and target_username =?",
         (
-            username,
-            target_username,
+            user.username,
+            user.target_username,
         ),
     )
 
@@ -53,8 +52,8 @@ def following_request(
     cur.execute(
         "INSERT INTO FOLLOW_REQUEST (username,target_username) VALUES(?,?)",
         (
-            username,
-            target_username,
+            user.username,
+            user.target_username,
         ),
     )
     con.commit()

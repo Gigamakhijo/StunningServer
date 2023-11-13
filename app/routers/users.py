@@ -1,6 +1,8 @@
-from pydantic import BaseModel
 from typing import Annotated
-from fastapi import Depends, APIRouter
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+
 from app.routers.auth import get_current_user
 
 

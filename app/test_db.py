@@ -1,8 +1,9 @@
-from . import db
-from . import utils
-import sqlite3
-import pytest
 import random
+import sqlite3
+
+import pytest
+
+from . import db, utils
 
 
 def test_connect():
