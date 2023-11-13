@@ -14,6 +14,7 @@ def cur():
     con = db.connect()
     yield con.cursor()
     con.close()
+    ...
 
 
 def test_register_success(cur):
@@ -36,7 +37,7 @@ def test_register_success(cur):
     )
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "User already exists"
+    assert response.json()["detail"] == "User aslready exists"
 
 
 def test_login_success():
@@ -46,7 +47,7 @@ def test_login_success():
         "/auth/register", data={"username": email, "password": passwd}
     )
 
-    assert response.status_code == 200, "가입 잘못됬음"
+    assert response.status_code == 200, "가입 잘못됐음"
 
     response = client.post("/auth/token", data={"username": email, "password": passwd})
     json = response.json()
