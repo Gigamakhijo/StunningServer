@@ -99,20 +99,3 @@ def get_user(email: str):
     return user
     ...
 
-
-def get_request(username: str, target_username: str):
-    con = connect()
-    cur = con.cursor()
-
-    cur.execute(
-        "SELECT * FROM FOLLOW_REQUEST WHERE username=? and target_username =?",
-        (
-            username,
-            target_username,
-        ),
-    )
-
-    res = cur.fetchone()
-
-    return res
-    ...
