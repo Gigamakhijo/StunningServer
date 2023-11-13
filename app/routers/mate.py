@@ -6,6 +6,16 @@ from .. import db
 router = APIRouter()
 
 
+class User(BaseModel):
+    username: str
+    target_username: str
+
+
+class Mate(BaseModel):
+    first_username: str
+    second_username: str
+
+
 @router.get("/mate/search/{username}")
 def searching_user(username: str):
     con = db.connect()
@@ -22,15 +32,8 @@ def searching_user(username: str):
     return user
 
 
-class User(BaseModel):
-    username: str
-    target_username: str
-
-
 @router.post("/mate/follow")
-def following_request(
-    user: User
-):
+def following_request(user: User):
     con = db.connect()
     cur = con.cursor()
 
@@ -60,4 +63,45 @@ def following_request(
 
     return HTTPException(status_code=status.HTTP_200_OK, detail="Request Success")
 
+    ...
+
+
+@router.post("/mate/follow/accept")
+def accept_request(mate: Mate):
+    # delete request , add mate
+    con = db.connect()
+    cur = con.cursor()
+
+    cur.execute(
+        "DELETE FROM FOLLOW_REQUEST WHERE username =? and target_username =?",
+        (
+            mate.first_username,
+            mate.second_username,
+        ),
+    )
+
+    cur.execute(
+        "INSERT INTO MATE(first_username,second_username) VALUES(?,?)",
+        (
+            mate.first_username,
+            mate.second_username,
+        ),
+    )
+    con.commit()
+    ...
+
+
+@router.post("/mate/follow/cancel")
+def cancel_request(user: User):
+    con = db.connect()
+    cur = con.cursor()
+
+    cur.execute(
+        "DELETE FROM FOLLOW_REQUEST WHERE username =? and target_username =?",
+        (
+            user.username,
+            user.target_username,
+        ),
+    )
+    con.commit()
     ...

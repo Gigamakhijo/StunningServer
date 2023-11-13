@@ -70,9 +70,9 @@ def test_request_confirm_failed():
     username = "leewoorim"
     target_username = "ohsujin"
 
-    res = client.post(
-        "/mate/follow", json={"username": username, "target_username": target_username}
-    )
+    body = {"username": username, "target_username": target_username}
+
+    res = client.post("/mate/follow", json=body)
 
     assert res.status_code == 409
 
@@ -81,16 +81,69 @@ def test_request_confirm_failed():
 
 # 요청 수락 했을 떄
 def test_request_accept():
-    # 데이터 옮기기
-    res = client.get("/mate/follow/accept")
+    first_username = utils.randomword(10)
+    second_username = utils.randomword(10)
+
+    con = db.connect()
+    cur = con.cursor()
+
+    cur.execute(
+        "INSERT INTO FOLLOW_REQUEST (username,target_username) VALUES(?,?)",
+        (
+            first_username,
+            second_username,
+        ),
+    )
+    con.commit()
+
+    body = {"first_username": first_username, "second_username": second_username}
+
+    res = client.post("/mate/follow/accept", json=body)
+
+    assert res.status_code == 200
+
+    res = cur.execute(
+        "SELECT * FROM MATE WHERE first_username =? and second_username = ?",
+        (
+            first_username,
+            second_username,
+        ),
+    )
+
+    res = cur.fetchone()
+    assert res["first_username"] == first_username, "first username error"
+    assert res["second_username"] == second_username, "second username error"
+
     ...
 
 
 # 요청 취소했을 때
-def test_request_cancel():
-    # 데이터 지우기
-    res = client.get("/mate/follow/cancel")
+def test_request_cancel(printer):
+    username = utils.randomword(10)
+    target_username = utils.randomword(10)
+
+    con = db.connect()
+    cur = con.cursor()
+
+    cur.execute(
+        "INSERT INTO FOLLOW_REQUEST(username,target_username) VALUES (?,?)",
+        (
+            username,
+            target_username,
+        ),
+    )
+    con.commit()
+
+    body = {"username": username, "target_username": target_username}
+    client.post("/mate/follow/cancel", json=body)
+
+    res = cur.execute(
+        "SELECT * FROM FOLLOW_REQUEST WHERE username =? and target_username = ?",
+        (
+            username,
+            target_username,
+        ),
+    )
+    res = res.fetchone()
+    assert res is None, "요청 취소 실패"
     ...
-
-
-#
