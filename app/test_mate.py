@@ -1,5 +1,7 @@
 import pytest
+import random
 from fastapi.testclient import TestClient
+
 
 from . import db, utils
 from .main import app
@@ -16,7 +18,16 @@ def cur():
 
 # 검색 시 유저있을때
 def test_search_result_success():
+    id = random.randint(1,1000)
     username = "leewoorim"
+    email = utils.randomword(10)
+    hashed_pw = utils.randomword(10)
+
+    con = db.connect()
+    cur = con.cursor()
+
+    cur.execute("INSERT INTO USERS(id,email,username,hashed_password), VALUES(?,?,?,?)",
+                (id,email,username,hashed_pw))
 
     res = client.get(f"/mate/search/{username}")
 
