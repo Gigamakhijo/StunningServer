@@ -23,11 +23,10 @@ def connect(path: str | None = None):
     CREATE TABLE IF NOT EXISTS "FOLLOW_REQUEST"(
         "id" INTEGER PRIMARY KEY AUTOINCREMENT,
         "username" TEXT NOT NULL,
-        "target_username" TEXT NOT NULL,
-        "following_state" INTEGER NOT NULL
+        "target_username" TEXT NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS "MATE_RELATIONSHIP"(
+    CREATE TABLE IF NOT EXISTS "MATE"(
         "id" INTEGER PRIMARY KEY AUTOINCREMENT,
         "first_username" TEXT NOT NULL,
         "second_username" TEXT NOT NULL 
