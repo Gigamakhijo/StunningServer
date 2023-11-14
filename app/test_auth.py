@@ -35,7 +35,7 @@ def test_register_success(cur):
     )
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "User aslready exists"
+    assert response.json()["detail"] == "User already exists"
 
 
 def test_login_success():
@@ -78,8 +78,8 @@ def test_login_fail_no_user(cur):
 
 def test_login_fail_incorrect_passwd():
     # not in db
-    email = "sdvddsas"
-    passwd = "asddddaff"
+    email = utils.randomword(10)
+    passwd = utils.randomword(10)
 
     response = client.post(
         "/auth/register", data={"username": email, "password": passwd}
